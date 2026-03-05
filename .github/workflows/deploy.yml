@@ -1,0 +1,19 @@
+name: Deploy Dashboard WeTECH
+
+on:
+  push:
+    branches: [ main ] # Se activa cuando subes algo a la rama main
+
+jobs:
+  build:
+    runs-on: self-hosted # <--- ESTO es lo que conecta con tu VM
+
+    steps:
+      - name: Descargar código del repo
+        uses: actions/checkout@v4
+
+      - name: Instalar dependencias
+        run: npm install
+
+      - name: Construir el proyecto
+        run: npm run build # O el comando que uses para compilar
