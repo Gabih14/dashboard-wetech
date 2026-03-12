@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { RefreshCw } from 'lucide-react';
 import { ApiError, Pedido, PedidoFilters } from '../types';
 import {
   cancelarPedido,
@@ -181,6 +182,7 @@ export default function PedidosPage() {
         updatePedidoInState(externalId, { estado: 'CANCELADO' });
       }
       setActionMessage('Pedido cancelado correctamente.');
+      await loadPedidos(page, appliedFilters);
     } catch (error) {
       setActionMessage(getErrorMessage(error, 'No se pudo cancelar el pedido.'));
     } finally {
@@ -200,6 +202,7 @@ export default function PedidosPage() {
         updatePedidoInState(externalId, { estado: 'CANCELADO' });
       }
       setActionMessage('Transferencia rechazada correctamente.');
+      await loadPedidos(page, appliedFilters);
     } catch (error) {
       setActionMessage(getErrorMessage(error, 'No se pudo rechazar la transferencia.'));
     } finally {
@@ -341,6 +344,15 @@ export default function PedidosPage() {
             className="w-full sm:w-auto px-4 py-2 rounded-lg text-sm font-medium bg-gray-100 text-gray-700 hover:bg-gray-200 disabled:opacity-50"
           >
             Limpiar
+          </button>
+
+          <button
+            onClick={() => loadPedidos(page, appliedFilters)}
+            disabled={isLoading}
+            className="w-full sm:w-auto px-4 py-2 rounded-lg text-sm font-medium border border-slate-300 text-slate-600 hover:bg-slate-50 disabled:opacity-50 flex items-center justify-center gap-2"
+          >
+            <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
+            Actualizar
           </button>
         </div>
       </div>
