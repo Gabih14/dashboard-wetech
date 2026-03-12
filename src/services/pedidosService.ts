@@ -132,7 +132,10 @@ export async function getPedidoByExternalId(externalId: string): Promise<Pedido>
   return normalizePedido(payload);
 }
 
-async function postPedidoAction(externalId: string, action: 'cancelar' | 'rechazar'): Promise<Pedido | null> {
+async function postPedidoAction(
+  externalId: string,
+  action: 'cancelar' | 'rechazar'
+): Promise<Pedido | null> {
   const response = await fetch(`${API_BASE_URL}/pedido/${encodeURIComponent(externalId)}/${action}`, {
     method: 'POST',
     headers: getAuthHeaders(true),

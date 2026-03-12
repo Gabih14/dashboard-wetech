@@ -191,22 +191,13 @@ export default function PedidosPage() {
     const isTransfer = pedido.metodo_pago === 'transfer';
     const isActionLoading = actionLoadingId === pedido.externalId;
 
+    if (!isPending) {
+      return null;
+    }
+
     return (
       <div className="flex flex-col gap-2">
-        {isPending && (
-          <button
-            onClick={(event) => {
-              event.stopPropagation();
-              handleCancelar(pedido.externalId);
-            }}
-            disabled={Boolean(actionLoadingId) || isActionLoading}
-            className="w-full px-2 py-1 rounded bg-red-100 text-red-700 hover:bg-red-200 disabled:opacity-50 text-xs"
-          >
-            {isActionLoading ? 'Procesando...' : 'Cancelar'}
-          </button>
-        )}
-
-        {isPending && isTransfer && (
+        {isTransfer && (
           <button
             onClick={(event) => {
               event.stopPropagation();
@@ -216,6 +207,19 @@ export default function PedidosPage() {
             className="w-full px-2 py-1 rounded bg-orange-100 text-orange-700 hover:bg-orange-200 disabled:opacity-50 text-xs"
           >
             {isActionLoading ? 'Procesando...' : 'Rechazar transferencia'}
+          </button>
+        )}
+
+        {!isTransfer && (
+          <button
+            onClick={(event) => {
+              event.stopPropagation();
+              handleCancelar(pedido.externalId);
+            }}
+            disabled={Boolean(actionLoadingId) || isActionLoading}
+            className="w-full px-2 py-1 rounded bg-red-100 text-red-700 hover:bg-red-200 disabled:opacity-50 text-xs"
+          >
+            {isActionLoading ? 'Procesando...' : 'Cancelar pedido'}
           </button>
         )}
       </div>
