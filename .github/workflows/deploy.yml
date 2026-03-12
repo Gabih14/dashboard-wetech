@@ -17,3 +17,5 @@ jobs:
 
       - name: Construir el proyecto
         run: npm run build # O el comando que uses para compilar
+        env:
+          VITE_API_TOKEN: ${{ vars.VITE_API_TOKEN }}
