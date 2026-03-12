@@ -37,7 +37,13 @@ function formatDate(value?: string): string {
   if (!value) return '-';
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return value;
-  return date.toLocaleString();
+  return date.toLocaleString('es-AR', {
+    day: '2-digit',
+    month: '2-digit',
+    year: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
 }
 
 function formatCurrency(value?: number): string {
@@ -47,6 +53,21 @@ function formatCurrency(value?: number): string {
     currency: 'ARS',
     maximumFractionDigits: 2,
   }).format(value);
+}
+
+function getComprobanteCorto(pedido: Pedido): string {
+  const comprobante =
+    typeof pedido.comprobante_numero === 'string' ? pedido.comprobante_numero.trim() : '';
+
+  if (!comprobante) return '-';
+  return comprobante.slice(-8);
+}
+
+function getEstadoBadgeClass(estado?: string): string {
+  if (estado === 'APROBADO') return 'bg-emerald-100 text-emerald-700';
+  if (estado === 'CANCELADO' || estado === 'RECHAZADO') return 'bg-rose-100 text-rose-700';
+  if (estado === 'PENDIENTE') return 'bg-amber-100 text-amber-700';
+  return 'bg-slate-100 text-slate-700';
 }
 
 export default function PedidosPage() {
@@ -204,9 +225,9 @@ export default function PedidosPage() {
               handleRechazarTransferencia(pedido.externalId);
             }}
             disabled={Boolean(actionLoadingId) || isActionLoading}
-            className="w-full px-2 py-1 rounded bg-orange-100 text-orange-700 hover:bg-orange-200 disabled:opacity-50 text-xs"
+            className="w-full px-2 py-1 rounded bg-orange-100 text-orange-700 hover:bg-orange-200 disabled:opacity-50 text-xs leading-tight"
           >
-            {isActionLoading ? 'Procesando...' : 'Rechazar transferencia'}
+            {isActionLoading ? 'Procesando...' : 'Rechazar transf.'}
           </button>
         )}
 
@@ -217,9 +238,9 @@ export default function PedidosPage() {
               handleCancelar(pedido.externalId);
             }}
             disabled={Boolean(actionLoadingId) || isActionLoading}
-            className="w-full px-2 py-1 rounded bg-red-100 text-red-700 hover:bg-red-200 disabled:opacity-50 text-xs"
+            className="w-full px-2 py-1 rounded bg-red-100 text-red-700 hover:bg-red-200 disabled:opacity-50 text-xs leading-tight"
           >
-            {isActionLoading ? 'Procesando...' : 'Cancelar pedido'}
+            {isActionLoading ? 'Procesando...' : 'Cancelar'}
           </button>
         )}
       </div>
@@ -227,20 +248,20 @@ export default function PedidosPage() {
   };
 
   return (
-    <div className="max-w-7xl mx-auto">
-      <div className="mb-6">
-        <h2 className="text-3xl font-bold text-gray-900 mb-2">Pedidos</h2>
-        <p className="text-gray-600">Gestión de pedidos, detalle y acciones manuales</p>
+    <div className="max-w-7xl mx-auto px-2 sm:px-0">
+      <div className="mb-6 rounded-2xl border border-slate-200 bg-gradient-to-r from-slate-50 to-slate-100/80 px-5 py-5">
+        <h2 className="text-3xl font-bold text-slate-900 mb-1">Pedidos</h2>
+        <p className="text-slate-600">Gestión operativa con foco en lectura rápida y acciones.</p>
       </div>
 
-      <div className="bg-white rounded-xl border border-gray-200 p-4 mb-6">
+      <div className="bg-white rounded-xl border border-slate-200 p-4 mb-6 shadow-sm">
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-6 gap-3">
           <select
             value={filtersForm.estado || ''}
             onChange={(event) =>
               setFiltersForm((prev) => ({ ...prev, estado: event.target.value }))
             }
-            className="px-3 py-2 border border-gray-300 rounded-lg text-sm"
+            className="px-3 py-2 border border-slate-300 rounded-lg text-sm bg-white"
           >
             <option value="">Estado (todos)</option>
             <option value="PENDIENTE">PENDIENTE</option>
@@ -254,7 +275,7 @@ export default function PedidosPage() {
             onChange={(event) =>
               setFiltersForm((prev) => ({ ...prev, from: event.target.value }))
             }
-            className="px-3 py-2 border border-gray-300 rounded-lg text-sm"
+            className="px-3 py-2 border border-slate-300 rounded-lg text-sm bg-white"
           />
 
           <input
@@ -263,17 +284,17 @@ export default function PedidosPage() {
             onChange={(event) =>
               setFiltersForm((prev) => ({ ...prev, to: event.target.value }))
             }
-            className="px-3 py-2 border border-gray-300 rounded-lg text-sm"
+            className="px-3 py-2 border border-slate-300 rounded-lg text-sm bg-white"
           />
 
           <input
             type="text"
             value={filtersForm.q || ''}
-            placeholder="Buscar nombre/cuit/external_id"
+            placeholder="Buscar nombre o CUIT"
             onChange={(event) =>
               setFiltersForm((prev) => ({ ...prev, q: event.target.value }))
             }
-            className="px-3 py-2 border border-gray-300 rounded-lg text-sm"
+            className="px-3 py-2 border border-slate-300 rounded-lg text-sm bg-white"
           />
 
           <select
@@ -281,7 +302,7 @@ export default function PedidosPage() {
             onChange={(event) =>
               setFiltersForm((prev) => ({ ...prev, metodo_pago: event.target.value }))
             }
-            className="px-3 py-2 border border-gray-300 rounded-lg text-sm"
+            className="px-3 py-2 border border-slate-300 rounded-lg text-sm bg-white"
           >
             <option value="">Pago (todos)</option>
             <option value="transfer">transfer</option>
@@ -293,7 +314,7 @@ export default function PedidosPage() {
             onChange={(event) =>
               setFiltersForm((prev) => ({ ...prev, delivery_method: event.target.value }))
             }
-            className="px-3 py-2 border border-gray-300 rounded-lg text-sm"
+            className="px-3 py-2 border border-slate-300 rounded-lg text-sm bg-white"
           >
             <option value="">Entrega (todos)</option>
             <option value="pickup">pickup</option>
@@ -336,26 +357,25 @@ export default function PedidosPage() {
         </div>
       )}
 
-      <div className="grid grid-cols-1 2xl:grid-cols-5 gap-6">
-        <div className="2xl:col-span-3 bg-white rounded-xl border border-gray-200 overflow-hidden">
-          <div className="hidden lg:block overflow-x-auto">
-            <table className="min-w-full text-sm">
-              <thead className="bg-gray-50 text-gray-600">
+      <div className="grid grid-cols-1 2xl:grid-cols-12 gap-6">
+        <div className="2xl:col-span-9 bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
+          <div className="hidden lg:block">
+            <table className="w-full text-sm">
+              <thead className="bg-slate-50 text-slate-600">
                 <tr>
-                  <th className="px-4 py-3 text-left font-medium">External ID</th>
+                  <th className="px-4 py-3 text-left font-medium whitespace-nowrap">Comp.</th>
                   <th className="px-4 py-3 text-left font-medium">Cliente</th>
-                  <th className="px-4 py-3 text-left font-medium">Estado</th>
-                  <th className="px-4 py-3 text-left font-medium">Pago</th>
-                  <th className="hidden xl:table-cell px-4 py-3 text-left font-medium">Entrega</th>
-                  <th className="px-4 py-3 text-left font-medium">Total</th>
-                  <th className="hidden xl:table-cell px-4 py-3 text-left font-medium">Creado</th>
-                  <th className="px-4 py-3 text-left font-medium min-w-[190px]">Acciones</th>
+                  <th className="px-4 py-3 text-left font-medium whitespace-nowrap">Estado</th>
+                  <th className="px-4 py-3 text-left font-medium whitespace-nowrap">Pago</th>
+                  <th className="px-4 py-3 text-left font-medium whitespace-nowrap">Total</th>
+                  <th className="hidden xl:table-cell px-4 py-3 text-left font-medium whitespace-nowrap">Creado</th>
+                  <th className="px-4 py-3 text-left font-medium whitespace-nowrap w-[150px]">Acciones</th>
                 </tr>
               </thead>
               <tbody>
                 {isLoading && (
                   <tr>
-                    <td className="px-4 py-6 text-gray-500" colSpan={8}>
+                    <td className="px-4 py-6 text-slate-500" colSpan={7}>
                       Cargando pedidos...
                     </td>
                   </tr>
@@ -363,7 +383,7 @@ export default function PedidosPage() {
 
                 {!isLoading && items.length === 0 && (
                   <tr>
-                    <td className="px-4 py-6 text-gray-500" colSpan={8}>
+                    <td className="px-4 py-6 text-slate-500" colSpan={7}>
                       No hay pedidos para los filtros seleccionados.
                     </td>
                   </tr>
@@ -373,22 +393,33 @@ export default function PedidosPage() {
                   items.map((pedido) => (
                     <tr
                       key={pedido.externalId}
-                      className={`border-t border-gray-100 cursor-pointer hover:bg-gray-50 ${
-                        selectedExternalId === pedido.externalId ? 'bg-blue-50' : ''
+                      className={`border-t border-slate-100 cursor-pointer transition-colors ${
+                        selectedExternalId === pedido.externalId
+                          ? 'bg-sky-50'
+                          : 'hover:bg-slate-50/80'
                       }`}
                       onClick={() => handleSelectPedido(pedido.externalId)}
                     >
-                      <td className="px-4 py-3 font-medium text-gray-900">{pedido.externalId || '-'}</td>
-                      <td className="px-4 py-3 text-gray-700">
-                        {pedido.cliente_nombre || '-'}
-                        <div className="text-xs text-gray-500">{pedido.cliente_cuit || '-'}</div>
+                      <td className="px-4 py-3 text-slate-700 font-semibold tracking-wide">
+                        {getComprobanteCorto(pedido)}
                       </td>
-                      <td className="px-4 py-3 text-gray-700">{pedido.estado || '-'}</td>
-                      <td className="px-4 py-3 text-gray-700">{pedido.metodo_pago || '-'}</td>
-                      <td className="hidden xl:table-cell px-4 py-3 text-gray-700">{pedido.delivery_method || '-'}</td>
-                      <td className="px-4 py-3 text-gray-700">{formatCurrency(pedido.total)}</td>
-                      <td className="hidden xl:table-cell px-4 py-3 text-gray-700">{formatDate(pedido.created_at)}</td>
-                      <td className="px-4 py-3 text-gray-700 align-top">{renderPedidoActions(pedido)}</td>
+                      <td className="px-4 py-3 text-slate-700">
+                        <p className="truncate font-medium text-slate-900">{pedido.cliente_nombre || '-'}</p>
+                        <div className="text-xs text-slate-500 truncate">{pedido.cliente_cuit || '-'}</div>
+                      </td>
+                      <td className="px-4 py-3 text-slate-700">
+                        <span
+                          className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${getEstadoBadgeClass(
+                            pedido.estado
+                          )}`}
+                        >
+                          {pedido.estado || '-'}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-slate-700">{pedido.metodo_pago || '-'}</td>
+                      <td className="px-4 py-3 text-slate-700 font-medium">{formatCurrency(pedido.total)}</td>
+                      <td className="hidden xl:table-cell px-4 py-3 text-slate-600 whitespace-nowrap">{formatDate(pedido.created_at)}</td>
+                      <td className="px-4 py-3 text-slate-700 align-top">{renderPedidoActions(pedido)}</td>
                     </tr>
                   ))}
               </tbody>
@@ -409,13 +440,19 @@ export default function PedidosPage() {
                   onClick={() => handleSelectPedido(pedido.externalId)}
                   className={`rounded-lg border p-3 cursor-pointer ${
                     selectedExternalId === pedido.externalId
-                      ? 'border-blue-300 bg-blue-50'
-                      : 'border-gray-200 bg-white'
+                      ? 'border-sky-300 bg-sky-50'
+                      : 'border-slate-200 bg-white'
                   }`}
                 >
                   <div className="flex items-start justify-between gap-2 mb-2">
-                    <p className="text-sm font-semibold text-gray-900 break-all">{pedido.externalId || '-'}</p>
-                    <p className="text-xs text-gray-600">{pedido.estado || '-'}</p>
+                    <p className="text-sm font-semibold text-slate-900">Comp. {getComprobanteCorto(pedido)}</p>
+                    <span
+                      className={`inline-flex rounded-full px-2 py-0.5 text-[11px] font-semibold ${getEstadoBadgeClass(
+                        pedido.estado
+                      )}`}
+                    >
+                      {pedido.estado || '-'}
+                    </span>
                   </div>
 
                   <div className="grid grid-cols-2 gap-x-3 gap-y-2 text-xs mb-3">
@@ -474,8 +511,8 @@ export default function PedidosPage() {
           </div>
         </div>
 
-        <div className="2xl:col-span-2 bg-white rounded-xl border border-gray-200 p-4 h-fit">
-          <h3 className="text-lg font-semibold text-gray-900 mb-3">Detalle de pedido</h3>
+        <div className="2xl:col-span-3 bg-white rounded-xl border border-slate-200 p-4 h-fit shadow-sm 2xl:sticky 2xl:top-4">
+          <h3 className="text-lg font-semibold text-slate-900 mb-3">Detalle de pedido</h3>
 
           {!selectedExternalId && (
             <p className="text-sm text-gray-600">Selecciona un pedido para ver su detalle.</p>
@@ -494,40 +531,44 @@ export default function PedidosPage() {
           {selectedExternalId && !isDetailLoading && selectedPedido && (
             <div className="space-y-3 text-sm">
               <div>
-                <p className="text-gray-500">External ID</p>
-                <p className="font-medium text-gray-900">{selectedPedido.externalId || '-'}</p>
+                <p className="text-slate-500">External ID</p>
+                <p className="font-medium text-slate-900 break-all">{selectedPedido.externalId || '-'}</p>
               </div>
               <div>
-                <p className="text-gray-500">Estado</p>
-                <p className="font-medium text-gray-900">{selectedPedido.estado || '-'}</p>
+                <p className="text-slate-500">Comprobante</p>
+                <p className="font-medium text-slate-900">{selectedPedido.comprobante_numero || '-'}</p>
               </div>
               <div>
-                <p className="text-gray-500">Cliente</p>
-                <p className="font-medium text-gray-900">{selectedPedido.cliente_nombre || '-'}</p>
+                <p className="text-slate-500">Estado</p>
+                <p className="font-medium text-slate-900">{selectedPedido.estado || '-'}</p>
               </div>
               <div>
-                <p className="text-gray-500">CUIT</p>
-                <p className="font-medium text-gray-900">{selectedPedido.cliente_cuit || '-'}</p>
+                <p className="text-slate-500">Cliente</p>
+                <p className="font-medium text-slate-900">{selectedPedido.cliente_nombre || '-'}</p>
               </div>
               <div>
-                <p className="text-gray-500">Método de pago</p>
-                <p className="font-medium text-gray-900">{selectedPedido.metodo_pago || '-'}</p>
+                <p className="text-slate-500">CUIT</p>
+                <p className="font-medium text-slate-900">{selectedPedido.cliente_cuit || '-'}</p>
               </div>
               <div>
-                <p className="text-gray-500">Método de entrega</p>
-                <p className="font-medium text-gray-900">{selectedPedido.delivery_method || '-'}</p>
+                <p className="text-slate-500">Método de pago</p>
+                <p className="font-medium text-slate-900">{selectedPedido.metodo_pago || '-'}</p>
               </div>
               <div>
-                <p className="text-gray-500">Total</p>
-                <p className="font-medium text-gray-900">{formatCurrency(selectedPedido.total)}</p>
+                <p className="text-slate-500">Método de entrega</p>
+                <p className="font-medium text-slate-900">{selectedPedido.delivery_method || '-'}</p>
               </div>
               <div>
-                <p className="text-gray-500">Creado</p>
-                <p className="font-medium text-gray-900">{formatDate(selectedPedido.created_at)}</p>
+                <p className="text-slate-500">Total</p>
+                <p className="font-medium text-slate-900">{formatCurrency(selectedPedido.total)}</p>
               </div>
               <div>
-                <p className="text-gray-500">Actualizado</p>
-                <p className="font-medium text-gray-900">{formatDate(selectedPedido.updated_at)}</p>
+                <p className="text-slate-500">Creado</p>
+                <p className="font-medium text-slate-900">{formatDate(selectedPedido.created_at)}</p>
+              </div>
+              <div>
+                <p className="text-slate-500">Actualizado</p>
+                <p className="font-medium text-slate-900">{formatDate(selectedPedido.updated_at)}</p>
               </div>
             </div>
           )}

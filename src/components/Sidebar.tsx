@@ -1,4 +1,4 @@
-import { Image, BarChart3, TrendingUp, ShoppingCart } from 'lucide-react';
+import { BarChart3, TrendingUp, ShoppingCart } from 'lucide-react';
 
 export type DashboardSection = 'pedidos' | 'images' | 'metrics';
 

@@ -20,6 +20,7 @@ export type DeliveryMethod = 'pickup' | string;
 export interface Pedido {
   id?: string;
   externalId: string;
+  comprobante_numero?: string;
   estado: PedidoEstado;
   metodo_pago?: MetodoPago;
   delivery_method?: DeliveryMethod;

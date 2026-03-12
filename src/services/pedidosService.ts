@@ -45,6 +45,10 @@ function normalizePedido(payload: unknown): Pedido {
   return {
     ...source,
     externalId: toString(source.externalId ?? source.external_id ?? source.id),
+    comprobante_numero: toString(
+      source.comprobante_numero ?? source.comprobanteNumero ?? source.numero_comprobante,
+      ''
+    ),
     estado: toString(source.estado ?? source.status ?? source.state, 'PENDIENTE'),
     metodo_pago: toString(source.metodo_pago ?? source.metodoPago ?? source.payment_method, ''),
     delivery_method: toString(source.delivery_method ?? source.deliveryMethod, ''),
