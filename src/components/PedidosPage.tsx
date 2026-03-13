@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { RefreshCw } from 'lucide-react';
 import { ApiError, Pedido, PedidoFilters } from '../types';
 import {
@@ -9,6 +9,7 @@ import {
 } from '../services/pedidosService';
 
 const DEFAULT_LIMIT = 20;
+const AUTO_REFRESH_INTERVAL_MS = 60_000;
 
 const INITIAL_FILTERS: PedidoFilters = {
   estado: '',
@@ -90,6 +91,18 @@ export default function PedidosPage() {
 
   const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
   const [actionMessage, setActionMessage] = useState<string | null>(null);
+  const [lastRefreshed, setLastRefreshed] = useState<Date | null>(null);
+
+  // Refs para el callback del intervalo, para evitar closures obsoletas
+  const pageRef = useRef(page);
+  const appliedFiltersRef = useRef(appliedFilters);
+  const isLoadingRef = useRef(isLoading);
+  const actionLoadingIdRef = useRef(actionLoadingId);
+  const loadPedidosRef = useRef<((targetPage: number, filters: PedidoFilters) => Promise<void>) | null>(null);
+  pageRef.current = page;
+  appliedFiltersRef.current = appliedFilters;
+  isLoadingRef.current = isLoading;
+  actionLoadingIdRef.current = actionLoadingId;
 
   const totalPages = useMemo(() => {
     if (!total || !limit) return 1;
@@ -110,6 +123,7 @@ export default function PedidosPage() {
       setItems(response.items);
       setTotal(response.total);
       setPage(response.page);
+      setLastRefreshed(new Date());
 
       if (selectedExternalId) {
         const existsInPage = response.items.some((item) => item.externalId === selectedExternalId);
@@ -128,8 +142,18 @@ export default function PedidosPage() {
     }
   };
 
+  loadPedidosRef.current = loadPedidos;
+
   useEffect(() => {
     loadPedidos(1, INITIAL_FILTERS);
+  }, []);
+
+  useEffect(() => {
+    const id = setInterval(() => {
+      if (isLoadingRef.current || actionLoadingIdRef.current) return;
+      loadPedidosRef.current?.(pageRef.current, appliedFiltersRef.current);
+    }, AUTO_REFRESH_INTERVAL_MS);
+    return () => clearInterval(id);
   }, []);
 
   const handleApplyFilters = async () => {
@@ -346,14 +370,21 @@ export default function PedidosPage() {
             Limpiar
           </button>
 
-          <button
-            onClick={() => loadPedidos(page, appliedFilters)}
-            disabled={isLoading}
-            className="w-full sm:w-auto px-4 py-2 rounded-lg text-sm font-medium border border-slate-300 text-slate-600 hover:bg-slate-50 disabled:opacity-50 flex items-center justify-center gap-2"
-          >
-            <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
-            Actualizar
-          </button>
+          <div className="flex flex-col items-start gap-1">
+            <button
+              onClick={() => loadPedidos(page, appliedFilters)}
+              disabled={isLoading}
+              className="w-full sm:w-auto px-4 py-2 rounded-lg text-sm font-medium border border-slate-300 text-slate-600 hover:bg-slate-50 disabled:opacity-50 flex items-center justify-center gap-2"
+            >
+              <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
+              Actualizar
+            </button>
+            <span className="text-xs text-slate-400">
+              {lastRefreshed
+                ? `Últ.: ${lastRefreshed.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}`
+                : 'Auto-refresco cada 30s'}
+            </span>
+          </div>
         </div>
       </div>
 
