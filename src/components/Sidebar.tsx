@@ -1,6 +1,5 @@
-import { BarChart3, TrendingUp, ShoppingCart } from 'lucide-react';
-
-export type DashboardSection = 'pedidos' | 'images' | 'metrics';
+import { BarChart3, Percent, ShoppingCart, TrendingUp } from 'lucide-react';
+import { DashboardSection } from '../types';
 
 interface SidebarProps {
   activeSection: DashboardSection;
@@ -51,6 +50,18 @@ export default function Sidebar({ activeSection, onSectionChange }: SidebarProps
           >
             <TrendingUp className="w-5 h-5" />
             <span className="font-medium">Métricas</span>
+          </button>
+
+          <button
+            onClick={() => onSectionChange('cupon')}
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
+              activeSection === 'cupon'
+                ? 'bg-blue-600 text-white'
+                : 'text-gray-300 hover:bg-slate-800'
+            }`}
+          >
+            <Percent className="w-5 h-5" />
+            <span className="font-medium">Cupones</span>
           </button>
         </nav>
       </div>

@@ -11,6 +11,8 @@ export interface Product {
   name: string;
 }
 
+export type DashboardSection = 'pedidos' | 'images' | 'metrics' | 'cupon';
+
 export type PedidoEstado = 'PENDIENTE' | 'APROBADO' | 'CANCELADO' | 'RECHAZADO' | string;
 
 export type MetodoPago = 'transfer' | 'online' | string;
@@ -48,6 +50,47 @@ export interface PedidoListResponse {
   total: number;
   page: number;
   limit: number;
+}
+
+export interface Cupon {
+  id: string;
+  descripcion?: string;
+  max_usos?: number;
+  maxUsosPorCuit?: number;
+  porcentajeDescuento?: number;
+  fechaDesde?: string;
+  fechaHasta?: string;
+  activo?: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+  [key: string]: unknown;
+}
+
+export interface CuponCreateInput {
+  id: string;
+  descripcion?: string;
+  max_usos?: number;
+  maxUsosPorCuit?: number;
+  porcentajeDescuento?: number;
+  fechaDesde?: string;
+  fechaHasta?: string;
+  activo?: boolean;
+}
+
+export interface CuponUsoStat {
+  id?: number;
+  cupon_id?: string;
+  cuit: string;
+  pedido_id?: number;
+  usado_en?: string;
+  [key: string]: unknown;
+}
+
+export interface CuponStats {
+  totalUsos: number;
+  ultimoUso?: string;
+  usos: CuponUsoStat[];
+  [key: string]: unknown;
 }
 
 export interface ApiError {
