@@ -58,6 +58,8 @@ export interface Cupon {
   max_usos?: number;
   maxUsosPorCuit?: number;
   porcentajeDescuento?: number;
+  porcentajeDescuentoTarjeta?: number;
+  porcentajeDescuentoTransferencia?: number;
   fechaDesde?: string;
   fechaHasta?: string;
   activo?: boolean;
@@ -72,6 +74,8 @@ export interface CuponCreateInput {
   max_usos?: number;
   maxUsosPorCuit?: number;
   porcentajeDescuento?: number;
+  porcentajeDescuentoTarjeta?: number;
+  porcentajeDescuentoTransferencia?: number;
   fechaDesde?: string;
   fechaHasta?: string;
   activo?: boolean;

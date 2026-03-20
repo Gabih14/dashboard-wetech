@@ -61,6 +61,12 @@ function normalizeCupon(payload: unknown): Cupon {
     porcentajeDescuento: toNumber(
       source.porcentajeDescuento ?? source.porcentaje_descuento ?? source.descuento
     ),
+    porcentajeDescuentoTarjeta: toNumber(
+      source.porcentajeDescuentoTarjeta ?? source.porcentaje_descuento_tarjeta
+    ),
+    porcentajeDescuentoTransferencia: toNumber(
+      source.porcentajeDescuentoTransferencia ?? source.porcentaje_descuento_transferencia
+    ),
     fechaDesde: toString(source.fechaDesde ?? source.fecha_desde ?? source.fechaInicio, ''),
     fechaHasta: toString(source.fechaHasta ?? source.fecha_hasta ?? source.fechaFin, ''),
     activo: toBoolean(source.activo ?? source.active),
@@ -139,6 +145,12 @@ function buildCreatePayload(input: CuponCreateInput): Record<string, unknown> {
   if (typeof input.maxUsosPorCuit === 'number') payload.maxUsosPorCuit = input.maxUsosPorCuit;
   if (typeof input.porcentajeDescuento === 'number') {
     payload.porcentajeDescuento = input.porcentajeDescuento;
+  }
+  if (typeof input.porcentajeDescuentoTarjeta === 'number') {
+    payload.porcentajeDescuentoTarjeta = input.porcentajeDescuentoTarjeta;
+  }
+  if (typeof input.porcentajeDescuentoTransferencia === 'number') {
+    payload.porcentajeDescuentoTransferencia = input.porcentajeDescuentoTransferencia;
   }
   if (input.fechaDesde) payload.fechaDesde = input.fechaDesde;
   if (input.fechaHasta) payload.fechaHasta = input.fechaHasta;

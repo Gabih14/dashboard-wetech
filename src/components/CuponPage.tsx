@@ -9,6 +9,8 @@ interface CuponFormState {
   max_usos: string;
   maxUsosPorCuit: string;
   porcentajeDescuento: string;
+  porcentajeDescuentoTarjeta: string;
+  porcentajeDescuentoTransferencia: string;
   fechaDesde: string;
   fechaHasta: string;
   activo: boolean;
@@ -20,6 +22,8 @@ const INITIAL_FORM: CuponFormState = {
   max_usos: '',
   maxUsosPorCuit: '',
   porcentajeDescuento: '',
+  porcentajeDescuentoTarjeta: '',
+  porcentajeDescuentoTransferencia: '',
   fechaDesde: '',
   fechaHasta: '',
   activo: true,
@@ -83,6 +87,12 @@ function buildCreateInput(form: CuponFormState): CuponCreateInput {
   if (form.porcentajeDescuento.trim()) {
     payload.porcentajeDescuento = Number(form.porcentajeDescuento);
   }
+  if (form.porcentajeDescuentoTarjeta.trim()) {
+    payload.porcentajeDescuentoTarjeta = Number(form.porcentajeDescuentoTarjeta);
+  }
+  if (form.porcentajeDescuentoTransferencia.trim()) {
+    payload.porcentajeDescuentoTransferencia = Number(form.porcentajeDescuentoTransferencia);
+  }
   if (form.fechaDesde) payload.fechaDesde = new Date(form.fechaDesde).toISOString();
   if (form.fechaHasta) payload.fechaHasta = new Date(form.fechaHasta).toISOString();
 
@@ -105,10 +115,20 @@ function validateForm(form: CuponFormState): string | null {
     }
   }
 
-  if (form.porcentajeDescuento.trim()) {
-    const percentage = Number(form.porcentajeDescuento);
+  const percentageFields = [
+    { label: 'El porcentaje de descuento', value: form.porcentajeDescuento },
+    { label: 'El porcentaje de descuento con tarjeta', value: form.porcentajeDescuentoTarjeta },
+    {
+      label: 'El porcentaje de descuento con transferencia',
+      value: form.porcentajeDescuentoTransferencia,
+    },
+  ];
+
+  for (const field of percentageFields) {
+    if (!field.value.trim()) continue;
+    const percentage = Number(field.value);
     if (!Number.isFinite(percentage) || percentage < 0.01 || percentage > 100) {
-      return 'El porcentaje de descuento debe estar entre 0.01 y 100.';
+      return `${field.label} debe estar entre 0.01 y 100.`;
     }
   }
 
@@ -127,6 +147,24 @@ function getCuponStatusClass(cupon: Cupon): string {
   return cupon.activo === false
     ? 'bg-rose-100 text-rose-700'
     : 'bg-emerald-100 text-emerald-700';
+}
+
+function renderDiscountLines(cupon: Cupon) {
+  return (
+    <div className="space-y-1 text-xs text-slate-500">
+      <div>
+        <span className="font-medium text-slate-700">General:</span> {formatPercent(cupon.porcentajeDescuento)}
+      </div>
+      <div>
+        <span className="font-medium text-slate-700">Tarjeta:</span>{' '}
+        {formatPercent(cupon.porcentajeDescuentoTarjeta)}
+      </div>
+      <div>
+        <span className="font-medium text-slate-700">Transferencia:</span>{' '}
+        {formatPercent(cupon.porcentajeDescuentoTransferencia)}
+      </div>
+    </div>
+  );
 }
 
 export default function CuponPage() {
@@ -303,7 +341,7 @@ export default function CuponPage() {
             </div>
             <div>
               <h3 className="text-lg font-semibold text-slate-900">Crear cupón</h3>
-              <p className="text-sm text-slate-500">Definí límites, fechas y porcentaje de descuento.</p>
+              <p className="text-sm text-slate-500">Definí límites, fechas y descuentos por tipo de pago.</p>
             </div>
           </div>
 
@@ -362,6 +400,34 @@ export default function CuponPage() {
                   step="0.01"
                   value={form.porcentajeDescuento}
                   onChange={(event) => handleInputChange('porcentajeDescuento', event.target.value)}
+                  className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                />
+              </label>
+
+              <label className="block text-sm font-medium text-slate-700">
+                Descuento tarjeta
+                <input
+                  type="number"
+                  min="0.01"
+                  max="100"
+                  step="0.01"
+                  value={form.porcentajeDescuentoTarjeta}
+                  onChange={(event) => handleInputChange('porcentajeDescuentoTarjeta', event.target.value)}
+                  className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                />
+              </label>
+
+              <label className="block text-sm font-medium text-slate-700">
+                Descuento transferencia
+                <input
+                  type="number"
+                  min="0.01"
+                  max="100"
+                  step="0.01"
+                  value={form.porcentajeDescuentoTransferencia}
+                  onChange={(event) =>
+                    handleInputChange('porcentajeDescuentoTransferencia', event.target.value)
+                  }
                   className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
                 />
               </label>
@@ -467,7 +533,7 @@ export default function CuponPage() {
                             <div className="text-xs text-slate-500">{cupon.descripcion || 'Sin descripción'}</div>
                           </td>
                           <td className="px-4 py-3 text-slate-700">
-                            {formatPercent(cupon.porcentajeDescuento)}
+                            {renderDiscountLines(cupon)}
                           </td>
                           <td className="px-4 py-3 text-slate-700">
                             <div>{formatDateOnly(cupon.fechaDesde)}</div>
@@ -528,7 +594,7 @@ export default function CuponPage() {
           </div>
         ) : (
           <div className="space-y-6">
-            <div className="grid gap-4 md:grid-cols-4">
+            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-6">
               <div className="rounded-xl bg-slate-50 p-4">
                 <p className="text-sm text-slate-500">Usos registrados</p>
                 <p className="mt-2 text-2xl font-semibold text-slate-900">{formatNumber(stats?.totalUsos)}</p>
@@ -544,6 +610,24 @@ export default function CuponPage() {
               <div className="rounded-xl bg-slate-50 p-4">
                 <p className="text-sm text-slate-500">Máximo por CUIT</p>
                 <p className="mt-2 text-2xl font-semibold text-slate-900">{formatNumber(selectedCupon.maxUsosPorCuit)}</p>
+              </div>
+              <div className="rounded-xl bg-slate-50 p-4">
+                <p className="text-sm text-slate-500">Desc. general</p>
+                <p className="mt-2 text-2xl font-semibold text-slate-900">
+                  {formatPercent(selectedCupon.porcentajeDescuento)}
+                </p>
+              </div>
+              <div className="rounded-xl bg-slate-50 p-4">
+                <p className="text-sm text-slate-500">Desc. tarjeta</p>
+                <p className="mt-2 text-2xl font-semibold text-slate-900">
+                  {formatPercent(selectedCupon.porcentajeDescuentoTarjeta)}
+                </p>
+              </div>
+              <div className="rounded-xl bg-slate-50 p-4">
+                <p className="text-sm text-slate-500">Desc. transferencia</p>
+                <p className="mt-2 text-2xl font-semibold text-slate-900">
+                  {formatPercent(selectedCupon.porcentajeDescuentoTransferencia)}
+                </p>
               </div>
             </div>
 
