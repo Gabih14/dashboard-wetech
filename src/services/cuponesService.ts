@@ -51,6 +51,9 @@ function asRecord(value: unknown): Record<string, unknown> {
 
 function normalizeCupon(payload: unknown): Cupon {
   const source = asRecord(payload);
+  const usosSource = source.usos ?? source.items ?? source.data;
+  const usosArray = Array.isArray(usosSource) ? usosSource : [];
+  const usos = usosArray.map((item) => normalizeCuponUso(item));
 
   return {
     ...source,
@@ -72,6 +75,8 @@ function normalizeCupon(payload: unknown): Cupon {
     activo: toBoolean(source.activo ?? source.active),
     createdAt: toString(source.createdAt ?? source.created_at, ''),
     updatedAt: toString(source.updatedAt ?? source.updated_at, ''),
+    usos: usos.length > 0 ? usos : undefined,
+    totalUsos: toNumber(source.totalUsos ?? source.total_usos) ?? usos.length,
   };
 }
 
@@ -187,6 +192,19 @@ export async function createCupon(input: CuponCreateInput): Promise<Cupon> {
 
   if (!response.ok) {
     throw await toApiError(response, 'No se pudo crear el cupón.');
+  }
+
+  const payload = await response.json();
+  return normalizeCupon(payload);
+}
+
+export async function getCuponById(id: string): Promise<Cupon> {
+  const response = await fetch(`${API_BASE_URL}/cupones/${encodeURIComponent(id)}`, {
+    headers: getAuthHeaders(),
+  });
+
+  if (!response.ok) {
+    throw await toApiError(response, 'No se pudo cargar el cupón.');
   }
 
   const payload = await response.json();

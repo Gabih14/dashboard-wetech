@@ -1,7 +1,7 @@
 import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { Ban, Percent, RefreshCw } from 'lucide-react';
-import { ApiError, Cupon, CuponCreateInput, CuponStats } from '../types';
-import { createCupon, desactivarCupon, getCupones, getCuponStats } from '../services/cuponesService';
+import { ApiError, Cupon, CuponCreateInput } from '../types';
+import { createCupon, desactivarCupon, getCupones, getCuponById } from '../services/cuponesService';
 
 interface CuponFormState {
   id: string;
@@ -171,15 +171,15 @@ export default function CuponPage() {
   const [form, setForm] = useState<CuponFormState>(INITIAL_FORM);
   const [cupones, setCupones] = useState<Cupon[]>([]);
   const [selectedCuponId, setSelectedCuponId] = useState<string | null>(null);
-  const [stats, setStats] = useState<CuponStats | null>(null);
+  const [selectedCuponDetail, setSelectedCuponDetail] = useState<Cupon | null>(null);
 
   const [isListLoading, setIsListLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isStatsLoading, setIsStatsLoading] = useState(false);
+  const [isDetailLoading, setIsDetailLoading] = useState(false);
   const [actionId, setActionId] = useState<string | null>(null);
 
   const [listError, setListError] = useState<string | null>(null);
-  const [statsError, setStatsError] = useState<string | null>(null);
+  const [detailError, setDetailError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
 
   const selectedCupon = useMemo(
@@ -205,7 +205,7 @@ export default function CuponPage() {
     } catch (error) {
       setCupones([]);
       setSelectedCuponId(null);
-      setStats(null);
+      setSelectedCuponDetail(null);
       setListError(getErrorMessage(error, 'No se pudieron cargar los cupones.'));
       return null;
     } finally {
@@ -213,18 +213,18 @@ export default function CuponPage() {
     }
   };
 
-  const loadStats = async (cuponId: string) => {
-    setIsStatsLoading(true);
-    setStatsError(null);
+  const loadCuponDetail = async (cuponId: string) => {
+    setIsDetailLoading(true);
+    setDetailError(null);
 
     try {
-      const nextStats = await getCuponStats(cuponId);
-      setStats(nextStats);
+      const detail = await getCuponById(cuponId);
+      setSelectedCuponDetail(detail);
     } catch (error) {
-      setStats(null);
-      setStatsError(getErrorMessage(error, 'No se pudieron cargar las estadísticas del cupón.'));
+      setSelectedCuponDetail(null);
+      setDetailError(getErrorMessage(error, 'No se pudieron cargar los detalles del cupón.'));
     } finally {
-      setIsStatsLoading(false);
+      setIsDetailLoading(false);
     }
   };
 
@@ -234,7 +234,7 @@ export default function CuponPage() {
     const initialize = async () => {
       const nextSelectedId = await loadCupones();
       if (isMounted && nextSelectedId) {
-        await loadStats(nextSelectedId);
+        await loadCuponDetail(nextSelectedId);
       }
     };
 
@@ -266,7 +266,7 @@ export default function CuponPage() {
       setMessage(`Cupón ${created.id} creado correctamente.`);
       const nextSelectedId = await loadCupones(created.id);
       if (nextSelectedId) {
-        await loadStats(nextSelectedId);
+        await loadCuponDetail(nextSelectedId);
       }
     } catch (error) {
       setMessage(getErrorMessage(error, 'No se pudo crear el cupón.'));
@@ -278,14 +278,14 @@ export default function CuponPage() {
   const handleSelectCupon = async (cuponId: string) => {
     setSelectedCuponId(cuponId);
     setMessage(null);
-    await loadStats(cuponId);
+    await loadCuponDetail(cuponId);
   };
 
   const handleRefresh = async () => {
     setMessage(null);
     const nextSelectedId = await loadCupones(selectedCuponId);
     if (nextSelectedId) {
-      await loadStats(nextSelectedId);
+      await loadCuponDetail(nextSelectedId);
     }
   };
 
@@ -298,9 +298,9 @@ export default function CuponPage() {
       setMessage(`Cupón ${cuponId} desactivado correctamente.`);
       const nextSelectedId = await loadCupones(selectedCuponId === cuponId ? null : selectedCuponId);
       if (nextSelectedId) {
-        await loadStats(nextSelectedId);
+        await loadCuponDetail(nextSelectedId);
       } else {
-        setStats(null);
+        setSelectedCuponDetail(null);
       }
     } catch (error) {
       setMessage(getErrorMessage(error, 'No se pudo desactivar el cupón.'));
@@ -319,7 +319,7 @@ export default function CuponPage() {
 
         <button
           onClick={handleRefresh}
-          disabled={isListLoading || isStatsLoading || isSubmitting}
+          disabled={isListLoading || isDetailLoading || isSubmitting}
           className="inline-flex items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
         >
           <RefreshCw className={`h-4 w-4 ${isListLoading ? 'animate-spin' : ''}`} />
@@ -571,16 +571,16 @@ export default function CuponPage() {
       <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
         <div className="mb-6 flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
           <div>
-            <h3 className="text-lg font-semibold text-slate-900">Estadísticas del cupón</h3>
+            <h3 className="text-lg font-semibold text-slate-900">Detalles del cupón</h3>
             <p className="text-sm text-slate-500">
-              {selectedCupon ? `Detalle de uso para ${selectedCupon.id}.` : 'Seleccioná un cupón para ver sus estadísticas.'}
+              {selectedCupon ? `Detalle de uso para ${selectedCupon.id}.` : 'Seleccioná un cupón para ver sus detalles.'}
             </p>
           </div>
         </div>
 
-        {statsError && (
+        {detailError && (
           <div className="mb-4 rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
-            {statsError}
+            {detailError}
           </div>
         )}
 
@@ -588,20 +588,24 @@ export default function CuponPage() {
           <div className="rounded-xl border border-dashed border-slate-300 px-6 py-10 text-center text-sm text-slate-500">
             No hay un cupón seleccionado.
           </div>
-        ) : isStatsLoading ? (
+        ) : isDetailLoading ? (
           <div className="rounded-xl border border-dashed border-slate-300 px-6 py-10 text-center text-sm text-slate-500">
-            Cargando estadísticas...
+            Cargando detalles...
           </div>
         ) : (
           <div className="space-y-6">
             <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-6">
               <div className="rounded-xl bg-slate-50 p-4">
                 <p className="text-sm text-slate-500">Usos registrados</p>
-                <p className="mt-2 text-2xl font-semibold text-slate-900">{formatNumber(stats?.totalUsos)}</p>
+                <p className="mt-2 text-2xl font-semibold text-slate-900">{formatNumber(selectedCuponDetail?.totalUsos)}</p>
               </div>
               <div className="rounded-xl bg-slate-50 p-4">
                 <p className="text-sm text-slate-500">Último uso</p>
-                <p className="mt-2 text-sm font-semibold text-slate-900">{formatDate(stats?.ultimoUso)}</p>
+                <p className="mt-2 text-sm font-semibold text-slate-900">
+                  {selectedCuponDetail?.usos && selectedCuponDetail.usos.length > 0
+                    ? formatDate(selectedCuponDetail.usos[0]?.usado_en)
+                    : '-'}
+                </p>
               </div>
               <div className="rounded-xl bg-slate-50 p-4">
                 <p className="text-sm text-slate-500">Máximo usos</p>
@@ -641,8 +645,8 @@ export default function CuponPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-200 bg-white">
-                  {stats?.usos.length ? (
-                    stats.usos.map((uso, index) => (
+                  {selectedCuponDetail?.usos?.length ? (
+                    selectedCuponDetail.usos.map((uso, index) => (
                       <tr key={`${uso.cuit}-${uso.usado_en ?? index}`}>
                         <td className="px-4 py-3 text-slate-700">{uso.cuit}</td>
                         <td className="px-4 py-3 text-slate-700">{uso.pedido_id ?? '-'}</td>

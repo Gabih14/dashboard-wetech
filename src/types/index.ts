@@ -65,6 +65,8 @@ export interface Cupon {
   activo?: boolean;
   createdAt?: string;
   updatedAt?: string;
+  usos?: CuponUsoStat[];
+  totalUsos?: number;
   [key: string]: unknown;
 }
 
