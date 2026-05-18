@@ -116,19 +116,20 @@ function validateForm(form: CuponFormState): string | null {
   }
 
   const percentageFields = [
-    { label: 'El porcentaje de descuento', value: form.porcentajeDescuento },
-    { label: 'El porcentaje de descuento con tarjeta', value: form.porcentajeDescuentoTarjeta },
+    { label: 'El porcentaje de descuento', value: form.porcentajeDescuento, min: 0.01 },
+    { label: 'El porcentaje de descuento con tarjeta', value: form.porcentajeDescuentoTarjeta, min: 0 },
     {
       label: 'El porcentaje de descuento con transferencia',
       value: form.porcentajeDescuentoTransferencia,
+      min: 0,
     },
   ];
 
   for (const field of percentageFields) {
     if (!field.value.trim()) continue;
     const percentage = Number(field.value);
-    if (!Number.isFinite(percentage) || percentage < 0.01 || percentage > 100) {
-      return `${field.label} debe estar entre 0.01 y 100.`;
+    if (!Number.isFinite(percentage) || percentage < field.min || percentage > 100) {
+      return `${field.label} debe estar entre ${field.min} y 100.`;
     }
   }
 
@@ -408,7 +409,7 @@ export default function CuponPage() {
                 Descuento tarjeta
                 <input
                   type="number"
-                  min="0.01"
+                  min="0"
                   max="100"
                   step="0.01"
                   value={form.porcentajeDescuentoTarjeta}
@@ -421,7 +422,7 @@ export default function CuponPage() {
                 Descuento transferencia
                 <input
                   type="number"
-                  min="0.01"
+                  min="0"
                   max="100"
                   step="0.01"
                   value={form.porcentajeDescuentoTransferencia}
