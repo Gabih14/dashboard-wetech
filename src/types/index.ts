@@ -11,7 +11,7 @@ export interface Product {
   name: string;
 }
 
-export type DashboardSection = 'pedidos' | 'images' | 'metrics' | 'cupon';
+export type DashboardSection = 'pedidos' | 'images' | 'metrics' | 'cupon' | 'colors';
 
 export type PedidoEstado = 'PENDIENTE' | 'APROBADO' | 'CANCELADO' | 'RECHAZADO' | string;
 
@@ -103,3 +103,19 @@ export interface ApiError {
   status: number;
   message: string;
 }
+
+export interface Color {
+  id?: string | number;
+  name: string;
+  hex: string;
+  createdAt?: string;
+  updatedAt?: string;
+  [key: string]: unknown;
+}
+
+export interface ColorCreateInput {
+  name: string;
+  hex: string;
+}
+
+export type ColorUpdateInput = ColorCreateInput;
