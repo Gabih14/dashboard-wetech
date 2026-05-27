@@ -83,6 +83,8 @@ export interface CuponCreateInput {
   activo?: boolean;
 }
 
+export type CuponUpdateInput = Partial<Omit<CuponCreateInput, 'id'>>;
+
 export interface CuponUsoStat {
   id?: number;
   cupon_id?: string;

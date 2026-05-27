@@ -1,7 +1,7 @@
 import { FormEvent, useEffect, useMemo, useState } from 'react';
-import { Ban, Percent, RefreshCw } from 'lucide-react';
-import { ApiError, Cupon, CuponCreateInput } from '../types';
-import { createCupon, desactivarCupon, getCupones, getCuponById } from '../services/cuponesService';
+import { Ban, Pencil, Percent, RefreshCw, X } from 'lucide-react';
+import { ApiError, Cupon, CuponCreateInput, CuponUpdateInput } from '../types';
+import { createCupon, desactivarCupon, getCupones, getCuponById, updateCupon } from '../services/cuponesService';
 
 interface CuponFormState {
   id: string;
@@ -99,8 +99,60 @@ function buildCreateInput(form: CuponFormState): CuponCreateInput {
   return payload;
 }
 
-function validateForm(form: CuponFormState): string | null {
-  if (!form.id.trim()) return 'El código del cupón es obligatorio.';
+function buildUpdateInput(form: CuponFormState, initialForm?: CuponFormState): CuponUpdateInput {
+  const payload: CuponUpdateInput = {};
+  const changed = (field: keyof CuponFormState) => !initialForm || form[field] !== initialForm[field];
+
+  if (changed('descripcion') && form.descripcion.trim()) payload.descripcion = form.descripcion.trim();
+  if (changed('max_usos') && form.max_usos.trim()) payload.max_usos = Number(form.max_usos);
+  if (changed('maxUsosPorCuit') && form.maxUsosPorCuit.trim()) {
+    payload.maxUsosPorCuit = Number(form.maxUsosPorCuit);
+  }
+  if (changed('porcentajeDescuento') && form.porcentajeDescuento.trim()) {
+    payload.porcentajeDescuento = Number(form.porcentajeDescuento);
+  }
+  if (changed('porcentajeDescuentoTarjeta') && form.porcentajeDescuentoTarjeta.trim()) {
+    payload.porcentajeDescuentoTarjeta = Number(form.porcentajeDescuentoTarjeta);
+  }
+  if (changed('porcentajeDescuentoTransferencia') && form.porcentajeDescuentoTransferencia.trim()) {
+    payload.porcentajeDescuentoTransferencia = Number(form.porcentajeDescuentoTransferencia);
+  }
+  if (changed('fechaDesde') && form.fechaDesde) payload.fechaDesde = new Date(form.fechaDesde).toISOString();
+  if (changed('fechaHasta') && form.fechaHasta) payload.fechaHasta = new Date(form.fechaHasta).toISOString();
+  if (changed('activo')) payload.activo = form.activo;
+
+  return payload;
+}
+
+function toDateInputValue(value?: string): string {
+  if (!value) return '';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value.slice(0, 10);
+  return date.toISOString().slice(0, 10);
+}
+
+function toFormValue(value?: string | number): string {
+  if (value === undefined || value === null) return '';
+  return String(value);
+}
+
+function buildFormFromCupon(cupon: Cupon): CuponFormState {
+  return {
+    id: cupon.id,
+    descripcion: cupon.descripcion ?? '',
+    max_usos: toFormValue(cupon.max_usos),
+    maxUsosPorCuit: toFormValue(cupon.maxUsosPorCuit),
+    porcentajeDescuento: toFormValue(cupon.porcentajeDescuento),
+    porcentajeDescuentoTarjeta: toFormValue(cupon.porcentajeDescuentoTarjeta),
+    porcentajeDescuentoTransferencia: toFormValue(cupon.porcentajeDescuentoTransferencia),
+    fechaDesde: toDateInputValue(cupon.fechaDesde),
+    fechaHasta: toDateInputValue(cupon.fechaHasta),
+    activo: cupon.activo !== false,
+  };
+}
+
+function validateForm(form: CuponFormState, requireId = true, allowZeroGeneralDiscount = false): string | null {
+  if (requireId && !form.id.trim()) return 'El código del cupón es obligatorio.';
 
   const integerFields = [
     { label: 'Máximo de usos', value: form.max_usos },
@@ -116,7 +168,11 @@ function validateForm(form: CuponFormState): string | null {
   }
 
   const percentageFields = [
-    { label: 'El porcentaje de descuento', value: form.porcentajeDescuento, min: 0.01 },
+    {
+      label: 'El porcentaje de descuento',
+      value: form.porcentajeDescuento,
+      min: allowZeroGeneralDiscount ? 0 : 0.01,
+    },
     { label: 'El porcentaje de descuento con tarjeta', value: form.porcentajeDescuentoTarjeta, min: 0 },
     {
       label: 'El porcentaje de descuento con transferencia',
@@ -170,6 +226,8 @@ function renderDiscountLines(cupon: Cupon) {
 
 export default function CuponPage() {
   const [form, setForm] = useState<CuponFormState>(INITIAL_FORM);
+  const [editingCuponId, setEditingCuponId] = useState<string | null>(null);
+  const [editingInitialForm, setEditingInitialForm] = useState<CuponFormState | null>(null);
   const [cupones, setCupones] = useState<Cupon[]>([]);
   const [selectedCuponId, setSelectedCuponId] = useState<string | null>(null);
   const [selectedCuponDetail, setSelectedCuponDetail] = useState<Cupon | null>(null);
@@ -187,6 +245,7 @@ export default function CuponPage() {
     () => cupones.find((cupon) => cupon.id === selectedCuponId) ?? null,
     [cupones, selectedCuponId]
   );
+  const isEditing = editingCuponId !== null;
 
   const loadCupones = async (preferredSelectedId?: string | null) => {
     setIsListLoading(true);
@@ -250,9 +309,26 @@ export default function CuponPage() {
     setForm((prev) => ({ ...prev, [field]: value }));
   };
 
+  const handleStartEdit = (cupon: Cupon) => {
+    const detail = selectedCuponDetail?.id === cupon.id ? selectedCuponDetail : cupon;
+    const nextForm = buildFormFromCupon(detail);
+    setEditingCuponId(cupon.id);
+    setEditingInitialForm(nextForm);
+    setForm(nextForm);
+    setSelectedCuponId(cupon.id);
+    setMessage(null);
+  };
+
+  const handleCancelEdit = () => {
+    setEditingCuponId(null);
+    setEditingInitialForm(null);
+    setForm(INITIAL_FORM);
+    setMessage(null);
+  };
+
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    const validationError = validateForm(form);
+    const validationError = validateForm(form, !isEditing, isEditing);
     if (validationError) {
       setMessage(validationError);
       return;
@@ -262,15 +338,25 @@ export default function CuponPage() {
     setMessage(null);
 
     try {
-      const created = await createCupon(buildCreateInput(form));
+      const updateInput = isEditing ? buildUpdateInput(form, editingInitialForm ?? undefined) : null;
+      if (isEditing && updateInput && Object.keys(updateInput).length === 0) {
+        setMessage('No hay cambios para guardar.');
+        return;
+      }
+
+      const saved = isEditing
+        ? await updateCupon(editingCuponId, updateInput ?? {})
+        : await createCupon(buildCreateInput(form));
       setForm(INITIAL_FORM);
-      setMessage(`Cupón ${created.id} creado correctamente.`);
-      const nextSelectedId = await loadCupones(created.id);
+      setEditingCuponId(null);
+      setEditingInitialForm(null);
+      setMessage(`Cupón ${saved.id} ${isEditing ? 'actualizado' : 'creado'} correctamente.`);
+      const nextSelectedId = await loadCupones(saved.id);
       if (nextSelectedId) {
         await loadCuponDetail(nextSelectedId);
       }
     } catch (error) {
-      setMessage(getErrorMessage(error, 'No se pudo crear el cupón.'));
+      setMessage(getErrorMessage(error, isEditing ? 'No se pudo actualizar el cupón.' : 'No se pudo crear el cupón.'));
     } finally {
       setIsSubmitting(false);
     }
@@ -341,8 +427,14 @@ export default function CuponPage() {
               <Percent className="h-5 w-5" />
             </div>
             <div>
-              <h3 className="text-lg font-semibold text-slate-900">Crear cupón</h3>
-              <p className="text-sm text-slate-500">Definí límites, fechas y descuentos por tipo de pago.</p>
+              <h3 className="text-lg font-semibold text-slate-900">
+                {isEditing ? `Editar cupón ${editingCuponId}` : 'Crear cupón'}
+              </h3>
+              <p className="text-sm text-slate-500">
+                {isEditing
+                  ? 'Actualizá solo los campos que necesites modificar.'
+                  : 'Definí límites, fechas y descuentos por tipo de pago.'}
+              </p>
             </div>
           </div>
 
@@ -353,8 +445,9 @@ export default function CuponPage() {
                 <input
                   value={form.id}
                   onChange={(event) => handleInputChange('id', event.target.value)}
+                  disabled={isEditing}
                   placeholder="BIENVENIDA10"
-                  className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                  className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-500"
                 />
               </label>
 
@@ -396,7 +489,7 @@ export default function CuponPage() {
                 Porcentaje descuento
                 <input
                   type="number"
-                  min="0.01"
+                  min={isEditing ? '0' : '0.01'}
                   max="100"
                   step="0.01"
                   value={form.porcentajeDescuento}
@@ -469,8 +562,19 @@ export default function CuponPage() {
               disabled={isSubmitting}
               className="inline-flex items-center justify-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
             >
-              {isSubmitting ? 'Creando...' : 'Crear cupón'}
+              {isSubmitting ? (isEditing ? 'Guardando...' : 'Creando...') : isEditing ? 'Guardar cambios' : 'Crear cupón'}
             </button>
+            {isEditing && (
+              <button
+                type="button"
+                onClick={handleCancelEdit}
+                disabled={isSubmitting}
+                className="ml-3 inline-flex items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                <X className="h-4 w-4" />
+                Cancelar
+              </button>
+            )}
           </form>
         </section>
 
@@ -546,6 +650,17 @@ export default function CuponPage() {
                             </span>
                           </td>
                           <td className="px-4 py-3 text-right">
+                            <button
+                              onClick={(event) => {
+                                event.stopPropagation();
+                                handleStartEdit(cupon);
+                              }}
+                              disabled={isSubmitting}
+                              className="mr-2 inline-flex items-center gap-2 rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-xs font-semibold text-blue-700 transition hover:bg-blue-100 disabled:cursor-not-allowed disabled:opacity-60"
+                            >
+                              <Pencil className="h-3.5 w-3.5" />
+                              Editar
+                            </button>
                             <button
                               onClick={(event) => {
                                 event.stopPropagation();
