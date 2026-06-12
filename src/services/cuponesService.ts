@@ -1,4 +1,4 @@
-import { ApiError, Cupon, CuponCreateInput, CuponStats, CuponUsoStat } from '../types';
+import { ApiError, Cupon, CuponCreateInput, CuponStats, CuponUpdateInput, CuponUsoStat } from '../types';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || '/api';
 const API_TOKEN = import.meta.env.VITE_API_TOKEN;
@@ -51,6 +51,9 @@ function asRecord(value: unknown): Record<string, unknown> {
 
 function normalizeCupon(payload: unknown): Cupon {
   const source = asRecord(payload);
+  const usosSource = source.usos ?? source.items ?? source.data;
+  const usosArray = Array.isArray(usosSource) ? usosSource : [];
+  const usos = usosArray.map((item) => normalizeCuponUso(item));
 
   return {
     ...source,
@@ -72,6 +75,8 @@ function normalizeCupon(payload: unknown): Cupon {
     activo: toBoolean(source.activo ?? source.active),
     createdAt: toString(source.createdAt ?? source.created_at, ''),
     updatedAt: toString(source.updatedAt ?? source.updated_at, ''),
+    usos: usos.length > 0 ? usos : undefined,
+    totalUsos: toNumber(source.totalUsos ?? source.total_usos) ?? usos.length,
   };
 }
 
@@ -140,6 +145,17 @@ function buildCreatePayload(input: CuponCreateInput): Record<string, unknown> {
     id: input.id,
   };
 
+  return appendCuponPayloadFields(payload, input);
+}
+
+function buildUpdatePayload(input: CuponUpdateInput): Record<string, unknown> {
+  return appendCuponPayloadFields({}, input);
+}
+
+function appendCuponPayloadFields(
+  payload: Record<string, unknown>,
+  input: CuponUpdateInput
+): Record<string, unknown> {
   if (input.descripcion) payload.descripcion = input.descripcion;
   if (typeof input.max_usos === 'number') payload.max_usos = input.max_usos;
   if (typeof input.maxUsosPorCuit === 'number') payload.maxUsosPorCuit = input.maxUsosPorCuit;
@@ -187,6 +203,34 @@ export async function createCupon(input: CuponCreateInput): Promise<Cupon> {
 
   if (!response.ok) {
     throw await toApiError(response, 'No se pudo crear el cupón.');
+  }
+
+  const payload = await response.json();
+  return normalizeCupon(payload);
+}
+
+export async function updateCupon(id: string, input: CuponUpdateInput): Promise<Cupon> {
+  const response = await fetch(`${API_BASE_URL}/cupones/${encodeURIComponent(id)}`, {
+    method: 'PATCH',
+    headers: getAuthHeaders(true),
+    body: JSON.stringify(buildUpdatePayload(input)),
+  });
+
+  if (!response.ok) {
+    throw await toApiError(response, 'No se pudo actualizar el cupÃ³n.');
+  }
+
+  const payload = await response.json();
+  return normalizeCupon(payload);
+}
+
+export async function getCuponById(id: string): Promise<Cupon> {
+  const response = await fetch(`${API_BASE_URL}/cupones/${encodeURIComponent(id)}`, {
+    headers: getAuthHeaders(),
+  });
+
+  if (!response.ok) {
+    throw await toApiError(response, 'No se pudo cargar el cupón.');
   }
 
   const payload = await response.json();

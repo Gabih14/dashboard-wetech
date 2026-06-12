@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { DashboardSection } from '../types';
 import Sidebar from './Sidebar';
 import CuponPage from './CuponPage';
+import ColorsPage from './ColorsPage';
 import ImageSection from './ImageSection';
 import MetricsPage from './MetricsPage';
 import PedidosPage from './PedidosPage';
@@ -17,6 +18,7 @@ export default function Dashboard() {
         {activeSection === 'images' && <ImageSection />}
         {activeSection === 'metrics' && <MetricsPage />}
         {activeSection === 'cupon' && <CuponPage />}
+        {activeSection === 'colors' && <ColorsPage />}
       </main>
     </div>
   );
