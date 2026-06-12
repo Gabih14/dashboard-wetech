@@ -106,10 +106,30 @@ export interface ApiError {
   message: string;
 }
 
+export interface ColorGroup {
+  id?: string | number;
+  name: string;
+  hex?: string;
+  sortOrder?: number;
+  createdAt?: string;
+  updatedAt?: string;
+  [key: string]: unknown;
+}
+
+export interface ColorGroupCreateInput {
+  name: string;
+  hex?: string;
+  sortOrder?: number;
+}
+
+export type ColorGroupUpdateInput = Partial<ColorGroupCreateInput>;
+
 export interface Color {
   id?: string | number;
   name: string;
   hex: string;
+  colorGroupId?: string | number | null;
+  colorGroup?: ColorGroup;
   createdAt?: string;
   updatedAt?: string;
   [key: string]: unknown;
@@ -118,6 +138,11 @@ export interface Color {
 export interface ColorCreateInput {
   name: string;
   hex: string;
+  colorGroupId?: string | number | null;
 }
 
-export type ColorUpdateInput = ColorCreateInput;
+export interface ColorUpdateInput {
+  name?: string;
+  hex?: string;
+  colorGroupId?: string | number | null;
+}
